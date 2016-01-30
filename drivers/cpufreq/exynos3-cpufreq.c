@@ -33,6 +33,10 @@
 
 #define VOLT_RANGE_STEP		25000
 
+#define MIN_VOLT 600000
+#define MAX_VOLT_ 1500000
+#define VOLT_DIV		500
+
 #ifdef CONFIG_SMP
 struct lpj_info {
 	unsigned long   ref;
@@ -291,6 +295,7 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 			"[ARM] set volt=%u,", regulator_get_voltage(arm_regulator));
 #endif
+//printk(KERN_INFO "[ARM] set volt=%u,", regulator_get_voltage(arm_regulator));
 out:
 	return ret;
 }
@@ -562,6 +567,77 @@ static ssize_t show_freq_table(struct kobject *kobj,
 	return count;
 }
 
+static ssize_t show_volt_table(struct kobject *kobj,
+			     struct attribute *attr, char *buf)
+{
+	int i, count = 0;
+	size_t tbl_sz = 0, pr_len;
+	struct cpufreq_frequency_table *freq_table = exynos_info->freq_table;
+
+	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
+		tbl_sz++;
+
+	if (!tbl_sz)
+		return -EINVAL;
+
+	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
+
+	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
+		if (freq_table[i].frequency != CPUFREQ_ENTRY_INVALID)
+			count += snprintf(&buf[count], pr_len, "%d %d ",
+					freq_table[i].frequency, exynos_info->volt_table[i]);
+	}
+
+	count += snprintf(&buf[count], 2, "\n");
+	return count;
+}
+
+static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
+			      const char *buf, size_t count)
+{
+	int target_freq, ret;
+	unsigned int microvolts;
+	struct cpufreq_frequency_table *table = exynos_info->freq_table;
+	int index;
+	int i;
+
+	ret = sscanf(buf, "%d %d", &target_freq, &microvolts);
+
+    if (ret != 2)
+        return -EINVAL;
+
+    printk(KERN_INFO "[Voltage Control] CPU Voltage table change request : %d %d", target_freq, microvolts);
+
+    microvolts = (microvolts / VOLT_DIV) * VOLT_DIV; /* integer operations should render a nice workable value */
+
+    if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
+    {
+		printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation failed, abort : %d %d", target_freq, microvolts);
+		return -EINVAL;
+	}
+
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+		unsigned int freq = table[i].frequency;
+		if (freq == CPUFREQ_ENTRY_INVALID)
+			continue;
+
+		if (target_freq == freq) {
+			index = i;
+			break;
+		}
+	}
+
+	if (table[i].frequency == CPUFREQ_TABLE_END)
+		return -EINVAL;
+
+	/* "index" is the index of the voltage table entry we want */
+	printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation success, setting values : %d %d", target_freq, microvolts);
+
+	exynos_info->volt_table[index] = microvolts;	
+
+	return count;
+}
+
 static ssize_t show_min_freq(struct kobject *kobj,
 			     struct attribute *attr, char *buf)
 {
@@ -623,6 +699,7 @@ static ssize_t store_max_freq(struct kobject *kobj, struct attribute *attr,
 }
 
 define_one_global_ro(freq_table);
+define_one_global_rw(volt_table);
 define_one_global_rw(min_freq);
 define_one_global_rw(max_freq);
 
@@ -632,11 +709,14 @@ static struct global_attr cpufreq_min_limit =
 		__ATTR(cpufreq_min_limit, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq);
 static struct global_attr cpufreq_max_limit =
 		__ATTR(cpufreq_max_limit, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq);
+static struct global_attr voltage_table =
+		__ATTR(voltage_table, S_IRUGO | S_IWUSR, show_volt_table, store_volt_table);
 
 static struct attribute *cpufreq_attributes[] = {
 	&freq_table.attr,
 	&min_freq.attr,
 	&max_freq.attr,
+	&volt_table.attr,
 	NULL
 };
 
@@ -864,6 +944,12 @@ static int __init exynos_cpufreq_init(void)
 		pr_err("%s: failed to create cpufreq_table sysfs interface\n", __func__);
 		goto err_cpufreq_table;
 	}
+	
+	ret = sysfs_create_file(cpufreq_global_kobject, &voltage_table.attr);
+	if (ret) {
+		pr_err("%s: failed to create voltage_table sysfs interface\n", __func__);
+		goto err_voltage_table;
+	}
 
 	ret = sysfs_create_file(cpufreq_global_kobject, &cpufreq_min_limit.attr);
 	if (ret) {
@@ -942,6 +1028,8 @@ err_cpufreq_max_limit_power:
 err_cpufreq_max_limit:
 	sysfs_remove_file(cpufreq_global_kobject, &cpufreq_min_limit.attr);
 err_cpufreq_min_limit:
+	sysfs_remove_file(cpufreq_global_kobject, &voltage_table.attr);
+err_voltage_table:
 	sysfs_remove_file(cpufreq_global_kobject, &cpufreq_table.attr);
 err_cpufreq_table:
 	sysfs_remove_group(cpufreq_global_kobject, &cpufreq_attr_group);
