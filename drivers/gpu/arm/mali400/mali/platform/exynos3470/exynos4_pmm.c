@@ -94,23 +94,30 @@ typedef struct mali_runtime_resumeTag{
 }mali_runtime_resume_table;
 
 #ifdef CONFIG_VIDEO_EXYNOS_FIMC_IS
-mali_runtime_resume_table mali_runtime_resume = {225, 900000, 1};
+mali_runtime_resume_table mali_runtime_resume = {266, 900000, 1};
 
 mali_dvfs_table mali_dvfs[MALI_DVFS_STEPS]={
-       /*step 0*/{150, 1000000,  900000,  0,  70},
-       /*step 1*/{225, 1000000,  900000, 62,  90},
-       /*step 2*/{300, 1000000,  925000, 85,  90},
-       /*step 3*/{450, 1000000, 1000000, 85, 100} };
+	/*step 0*/{160  ,1000000, 875000, 0, 62},
+	/*step 1*/{266  ,1000000, 900000, 62, 65},
+		  {300  ,1000000, 900000, 65, 70},
+	/*step 2*/{350  ,1000000, 950000, 70, 80},
+	/*step 3*/{440  ,1000000, 1025000, 80, 85},
+	/*step 4*/{533  ,1000000, 1075000, 85, 90},
+	/*step 5*/{600  ,1000000, 1100000, 90, 95},
+	/*step 6*/{640  ,1000000, 1175000, 95, 100} };
 #else
 mali_runtime_resume_table mali_runtime_resume = {266, 900000, 1};
 
 /*dvfs table updated on 130520*/
 mali_dvfs_table mali_dvfs[MALI_DVFS_STEPS]={
-	/*step 0*/{160, 1000000,  900000,  0,  70},
-	/*step 1*/{266, 1000000,  900000, 62,  90},
-	/*step 2*/{300, 1000000,  925000, 85,  90},
-	/*step 3*/{340, 1000000,  950000, 85,  90},
-	/*step 4*/{440, 1000000, 1000000, 85, 100} };
+        /*step 0*/{160  ,1000000, 875000, 0, 62},
+        /*step 1*/{266  ,1000000, 900000, 62, 65},
+		  {300  ,1000000, 900000, 65, 70},
+        /*step 2*/{350  ,1000000, 950000, 70, 80},
+        /*step 3*/{440  ,1000000, 1025000, 80, 85},
+        /*step 4*/{533  ,1000000, 1075000, 85, 90},
+        /*step 5*/{600  ,1000000, 1100000, 90, 95},
+        /*step 6*/{640  ,1000000, 1175000, 95, 100} };
 #endif
 
 #define EXTXTALCLK_NAME  "ext_xtal"
@@ -135,13 +142,13 @@ static struct clk *mali_clock = NULL;
 
 /* CARMEN */
 #ifdef CONFIG_VIDEO_EXYNOS_FIMC_IS
-int mali_gpu_clk = 225;
+int mali_gpu_clk = 266;
 int mali_gpu_vol = 900000;
-char *mali_freq_table = "450 300 225 150";
+char *mali_freq_table = "640 600 533 440 350 300 266 160";
 #else
 int mali_gpu_clk = 266;
 int mali_gpu_vol = 900000;
-char *mali_freq_table = "440 340 300 266 160";
+char *mali_freq_table = "640 600 533 440 350 300 266 160";
 #endif
 
 static unsigned int GPU_MHZ	= 1000000;

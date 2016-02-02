@@ -1001,8 +1001,6 @@ static int __devinit ktd2026_probe(struct i2c_client *client,
 	}
 #endif
 
-	fading_status = 0;
-	
 	return ret;
 exit:
 	mutex_destroy(&data->mutex);
