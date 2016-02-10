@@ -353,6 +353,7 @@ LDFLAGS_MODULE  =
 CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+GRAPHITE_FLAGS  = -fgraphite -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten
 
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
@@ -563,7 +564,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O3 $(call cc-disable-warning,maybe-uninitialized,) -g0 -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vectorize -Wno-array-bounds -fivopts -fno-inline-functions
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
