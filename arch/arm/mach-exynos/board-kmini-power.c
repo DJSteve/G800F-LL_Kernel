@@ -229,8 +229,8 @@ static struct regulator_consumer_supply s2m_ldo39_consumer_rev00 =
 static struct regulator_init_data s2m_buck1_data = {
 	.constraints	= {
 		.name		= "vdd_mif range",
-		.min_uV		=  800000,
-		.max_uV		= 1300000,
+		.min_uV		=  600000,
+		.max_uV		= 1600000,
 		.apply_uV	= 1,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				REGULATOR_CHANGE_STATUS,
@@ -249,8 +249,8 @@ static struct regulator_init_data s2m_buck1_data = {
 static struct regulator_init_data s2m_buck2_data = {
 	.constraints	= {
 		.name		= "vdd_arm range",
-		.min_uV		=  800000,
-		.max_uV		= 1400000,
+		.min_uV		=  600000,
+		.max_uV		= 1700000,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				  REGULATOR_CHANGE_STATUS,
 		.always_on = 1,
@@ -266,8 +266,8 @@ static struct regulator_init_data s2m_buck2_data = {
 static struct regulator_init_data s2m_buck3_data = {
 	.constraints	= {
 		.name		= "vdd_int range",
-		.min_uV		=  800000,
-		.max_uV		= 1400000,
+		.min_uV		=  600000,
+		.max_uV		= 1600000,
 		.apply_uV	= 1,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				REGULATOR_CHANGE_STATUS,
@@ -286,8 +286,8 @@ static struct regulator_init_data s2m_buck3_data = {
 static struct regulator_init_data s2m_buck4_data = {
 	.constraints	= {
 		.name		= "vdd_g3d range",
-		.min_uV		=  800000,
-		.max_uV		= 1400000,
+		.min_uV		=  600000,
+		.max_uV		= 1600000,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				  REGULATOR_CHANGE_STATUS,
 		.always_on = 1,
