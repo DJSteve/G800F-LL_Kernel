@@ -125,13 +125,13 @@ static unsigned int *exynos4270_int_mfc_div;
 static unsigned int (*exynos4270_int_cam_div)[6];
 static unsigned int *exynos4270_int_cam1_div;
 
-static unsigned int exynos4270_int_lbus_div_rev[][2] = {
+//static unsigned int exynos4270_int_lbus_div_rev[][2] = {
 /* ACLK_GDL, ACLK_GPL */
-	{ 3, 1},		/* LV0 */
-	{ 4, 1},		/* LV1 */
-	{ 5, 1},		/* LV2 */
-	{ 7, 1},		/* LV3 */
-};
+//	{ 3, 1},		/* LV0 */
+//	{ 4, 1},		/* LV1 */
+//	{ 5, 1},		/* LV2 */
+//	{ 7, 1},		/* LV3 */
+//};
 
 static unsigned int exynos4270_int_lbus_div_rev2[][2] = {
 /* ACLK_GDL, ACLK_GPL */
@@ -142,13 +142,13 @@ static unsigned int exynos4270_int_lbus_div_rev2[][2] = {
 	{ 7, 1},		/* LV4 */
 };
 
-static unsigned int exynos4270_int_rbus_div_rev[][2] = {
+//static unsigned int exynos4270_int_rbus_div_rev[][2] = {
 /* ACLK_GDR, ACLK_GPR */
-	{ 3, 1},		/* LV0 */
-	{ 4, 1},		/* LV1 */
-	{ 5, 1},		/* LV2 */
-	{ 7, 1},		/* LV3 */
-};
+//	{ 3, 1},		/* LV0 */
+//	{ 4, 1},		/* LV1 */
+//	{ 5, 1},		/* LV2 */
+//	{ 7, 1},		/* LV3 */
+//};
 
 static unsigned int exynos4270_int_rbus_div_rev2[][2] = {
 /* ACLK_GDR, ACLK_GPR */
@@ -159,13 +159,13 @@ static unsigned int exynos4270_int_rbus_div_rev2[][2] = {
 	{ 7, 1},		/* LV4 */
 };
 
-static unsigned int exynos4270_int_top_div_rev[][5] = {
+//static unsigned int exynos4270_int_top_div_rev[][5] = {
 /* ACLK_266, ACLK_160, ACLK_200, ACLK_100, ACLK_400 */
-	{ 2, 4, 3, 7, 1},	/* LV0 */
-	{ 3, 5, 4, 7, 2},	/* LV1 */
-	{ 7, 5, 5, 7, 5},	/* LV2 */
-	{ 7, 7, 7, 7, 7},	/* LV3 */
-};
+//	{ 2, 4, 3, 7, 1},	/* LV0 */
+//	{ 3, 5, 4, 7, 2},	/* LV1 */
+//	{ 7, 5, 5, 7, 5},	/* LV2 */
+//	{ 7, 7, 7, 7, 7},	/* LV3 */
+//};
 
 static unsigned int exynos4270_int_top_div_rev2[][5] = {
 /* ACLK_266, ACLK_160, ACLK_200, ACLK_100, ACLK_400 */
@@ -176,13 +176,13 @@ static unsigned int exynos4270_int_top_div_rev2[][5] = {
 	{ 7, 7, 7, 7, 7},	/* LV3 */
 };
 
-static unsigned int exynos4270_int_acp0_div_rev[][5] = {
+//static unsigned int exynos4270_int_acp0_div_rev[][5] = {
 /* ACLK_ACP, PCLK_ACP, ACP_DMC, ACP_DMCD, ACP_DMCP */
-	{ 5, 1, 1, 1, 3},	/* LV0 */
-	{ 5, 1, 1, 1, 3},	/* LV1 */
-	{ 5, 1, 1, 1, 3},	/* LV2 */
-	{ 7, 1, 1, 1, 3},	/* LV3 */
-};
+//	{ 5, 1, 1, 1, 3},	/* LV0 */
+//	{ 5, 1, 1, 1, 3},	/* LV1 */
+//	{ 5, 1, 1, 1, 3},	/* LV2 */
+//	{ 7, 1, 1, 1, 3},	/* LV3 */
+//};
 
 static unsigned int exynos4270_int_acp0_div_rev2[][5] = {
 /* ACLK_ACP, PCLK_ACP, ACP_DMC, ACP_DMCD, ACP_DMCP */
@@ -193,13 +193,13 @@ static unsigned int exynos4270_int_acp0_div_rev2[][5] = {
 	{ 7, 1, 1, 1, 3},	/* LV4 */
 };
 
-static unsigned int exynos4270_int_acp1_div_rev[] = {
+//static unsigned int exynos4270_int_acp1_div_rev[] = {
 /* ACLK_G2D */
-	0,			/* LV0 */
-	0,			/* LV1 */
-	0,			/* LV2 */
-	1,			/* LV3 */
-};
+//	0,			/* LV0 */
+//	0,			/* LV1 */
+//	0,			/* LV2 */
+//	1,			/* LV3 */
+//};
 
 static unsigned int exynos4270_int_acp1_div_rev2[] = {
 /* ACLK_G2D */
@@ -210,13 +210,13 @@ static unsigned int exynos4270_int_acp1_div_rev2[] = {
 	1,			/* LV4 */
 };
 
-static unsigned int exynos4270_int_mfc_div_rev[] = {
+//static unsigned int exynos4270_int_mfc_div_rev[] = {
 /* SCLK_MFC */
-	3,			/* LV0 */
-	4,			/* LV1 */
-	5,			/* LV2 */
-	7,			/* LV3 */
-};
+//	3,			/* LV0 */
+//	4,			/* LV1 */
+//	5,			/* LV2 */
+//	7,			/* LV3 */
+//};
 
 static unsigned int exynos4270_int_mfc_div_rev2[] = {
 /* SCLK_MFC */
@@ -227,13 +227,13 @@ static unsigned int exynos4270_int_mfc_div_rev2[] = {
 	7,			/* LV4 */
 };
 
-static unsigned int exynos4270_int_cam_div_rev[][6] = {
+//static unsigned int exynos4270_int_cam_div_rev[][6] = {
 /* SCLK_CSIS0, SCLK_CSIS1, SCLK_FIMC0, SCLK_FIMC1, SCLK_FIMC2, SCLK_FIMC3 */
-	{ 2, 2, 4, 4, 4, 4},	/* LV0 */
-	{ 4, 4, 5, 5, 5, 5},	/* LV1 */
-	{ 5, 5, 5, 5, 5, 5},	/* LV2 */
-	{ 7, 7, 7, 7, 7, 7},	/* LV3 */
-};
+//	{ 2, 2, 4, 4, 4, 4},	/* LV0 */
+//	{ 4, 4, 5, 5, 5, 5},	/* LV1 */
+//	{ 5, 5, 5, 5, 5, 5},	/* LV2 */
+//	{ 7, 7, 7, 7, 7, 7},	/* LV3 */
+//};
 
 static unsigned int exynos4270_int_cam_div_rev2[][6] = {
 /* SCLK_CSIS0, SCLK_CSIS1, SCLK_FIMC0, SCLK_FIMC1, SCLK_FIMC2, SCLK_FIMC3 */
@@ -244,13 +244,13 @@ static unsigned int exynos4270_int_cam_div_rev2[][6] = {
 	{ 7, 7, 7, 7, 7, 7},	/* LV3 */
 };
 
-static unsigned int exynos4270_int_cam1_div_rev[] = {
+//static unsigned int exynos4270_int_cam1_div_rev[] = {
 /* SCLK_JPEG */
-	3,
-	4,
-	5,
-	7,
-};
+//	3,
+//	4,
+//	5,
+//	7,
+//};
 
 static unsigned int exynos4270_int_cam1_div_rev2[] = {
 /* SCLK_JPEG */
@@ -907,7 +907,6 @@ static __devinit int exynos4270_busfreq_int_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	if (samsung_rev() >= EXYNOS3470_REV_2_0) {
 		int_bus_opp_list = int_bus_opp_list_rev2;
 		exynos4270_int_lbus_div = exynos4270_int_lbus_div_rev2;
 		exynos4270_int_rbus_div = exynos4270_int_rbus_div_rev2;
@@ -918,18 +917,6 @@ static __devinit int exynos4270_busfreq_int_probe(struct platform_device *pdev)
 		exynos4270_int_cam_div = exynos4270_int_cam_div_rev2;
 		exynos4270_int_cam1_div = exynos4270_int_cam1_div_rev2;
 		LV_END = 5;
-	} else {
-		int_bus_opp_list = int_bus_opp_list_rev;
-		exynos4270_int_lbus_div = exynos4270_int_lbus_div_rev;
-		exynos4270_int_rbus_div = exynos4270_int_rbus_div_rev;
-		exynos4270_int_top_div = exynos4270_int_top_div_rev;
-		exynos4270_int_acp0_div = exynos4270_int_acp0_div_rev;
-		exynos4270_int_acp1_div = exynos4270_int_acp1_div_rev;
-		exynos4270_int_mfc_div = exynos4270_int_mfc_div_rev;
-		exynos4270_int_cam_div = exynos4270_int_cam_div_rev;
-		exynos4270_int_cam1_div = exynos4270_int_cam1_div_rev;
-		LV_END = 4;
-	}
 
 	data->dev = dev;
 	mutex_init(&data->lock);

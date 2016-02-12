@@ -605,15 +605,11 @@ int exynos3470_init_asv(struct asv_common *asv_info)
 	}
 
 	/* If it is not revision 2, ignore ids & hpm in asv group 1 */
-	if (samsung_rev() >= EXYNOS3470_REV_2_0)
 			refer_table_get_asv = refer_table_get_asv_rev2;
-	else
-			refer_table_get_asv = refer_table_get_asv_rev;
 
 set_asv_info:
 	asv_info->regist_asv_member = exynos3470_regist_asv_member;
 
-	if (samsung_rev() >= EXYNOS3470_REV_2_0)
 		register_syscore_ops(&exynos3470_asv_syscore_ops);
 
 	return 0;

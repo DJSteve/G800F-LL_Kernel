@@ -31,11 +31,11 @@
 
 static unsigned int (*refer_table_get_asv)[ARM_ASV_GRP_NR];
 /* carmen range */
-static unsigned int refer_table_get_asv_rev[2][ARM_ASV_GRP_NR] = {
+//static unsigned int refer_table_get_asv_rev[2][ARM_ASV_GRP_NR] = {
 	/*0  1   2   3   4   5   6   7   8   9  10  11  12  13  14*/
-	{ 0, 0,  2,  3,  4,  6,  8, 10, 13, 16, 20, 25, 33, 40, 999},
-	{ 0, 0, 19, 24, 27, 30, 32, 34, 36, 38, 40, 42, 44, 48, 999},
-};
+//	{ 0, 0,  2,  3,  4,  6,  8, 10, 13, 16, 20, 25, 33, 40, 999},
+//	{ 0, 0, 19, 24, 27, 30, 32, 34, 36, 38, 40, 42, 44, 48, 999},
+//};
 
 /* carmen plus range : we select this table in asv framework */
 static unsigned int refer_table_get_asv_rev2[2][ARM_ASV_GRP_NR] = {

@@ -243,14 +243,12 @@ int exynos4_pmu_cp_init(void)
 	unsigned int gpio;
 
         pr_info("%s\n", __func__);
-	if (samsung_rev() >= EXYNOS3470_REV_2_0) {
 		gpio = EXYNOS4_GPM2(3);
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(1));
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		s5p_gpio_set_pd_cfg(gpio, S5P_GPIO_PD_OUTPUT1);
 		s5p_gpio_set_data(gpio, 1);
 		s5p_gpio_set_pd_pull(gpio, S3C_GPIO_PULL_NONE);
-	}
 
 	cp_ctrl = __raw_readl(EXYNOS3470_CP_CTRL);
 	cp_ctrl |= MASK_CP_PWRDN_DONE;

@@ -680,7 +680,6 @@ static __devinit int exynos4270_busfreq_mif_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	if (samsung_rev() >= EXYNOS3470_REV_2_0) {
 		if (pop_type == LPDDR3_1500) {
 			exynos4270_dram_parameter = exynos4270_dram_parameter_rev2;
 			exynos4270_set_drex = exynos4270_set_drex_rev2;
@@ -688,10 +687,6 @@ static __devinit int exynos4270_busfreq_mif_probe(struct platform_device *pdev)
 			exynos4270_dram_parameter = exynos4270_dram_parameter_rev;
 			exynos4270_set_drex = exynos4270_set_drex_rev;
 		}
-	} else {
-		exynos4270_dram_parameter = exynos4270_dram_parameter_rev;
-		exynos4270_set_drex = exynos4270_set_drex_rev;
-	}
 
 #ifndef CONFIG_ARM_TRUSTZONE
 	/* ioremap for drex base address */

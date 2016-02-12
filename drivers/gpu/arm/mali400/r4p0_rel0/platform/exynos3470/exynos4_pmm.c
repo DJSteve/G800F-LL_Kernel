@@ -950,7 +950,6 @@ static _mali_osk_errcode_t enable_mali_clocks(void)
 	if (ENABLE_LOCK_BY_ISP) {
 		MALI_DEBUG_PRINT(1, ("DVFS is already locked by ISP\n"));
 #ifdef EXYNOS4_ASV_ENABLED
-		if (samsung_rev() >= EXYNOS3470_REV_2_0)
 			exynos_set_abb(ID_G3D, get_match_abb(ID_G3D, mali_dvfs_isp[mali_isp_current_level].clock * GPU_ASV_VOLT));
 #endif
 		mali_clk_set_rate_isp(mali_isp_current_level);
@@ -961,7 +960,6 @@ static _mali_osk_errcode_t enable_mali_clocks(void)
 	/* set clock rate */
 #ifdef CONFIG_MALI_DVFS
 #ifdef EXYNOS4_ASV_ENABLED
-	if (samsung_rev() >= EXYNOS3470_REV_2_0)
 		exynos_set_abb(ID_G3D, get_match_abb(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT));
 #endif
 
@@ -995,7 +993,6 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 {
 	_mali_osk_mutex_wait(mali_isp_lock);
 #ifdef EXYNOS4_ASV_ENABLED
-	if (samsung_rev() >= EXYNOS3470_REV_2_0)
 		exynos_set_abb(ID_G3D, ABB_BYPASS);
 #endif
 
