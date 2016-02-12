@@ -324,7 +324,9 @@ static int muic_charger_cb(enum muic_attached_dev cable_type)
 	#endif
 	case ATTACHED_DEV_TA_MUIC:
 	case ATTACHED_DEV_CDP_MUIC:
+	#if !defined(CONFIG_MACH_GARDA)
 	case ATTACHED_DEV_CARDOCK_MUIC:
+	#endif
 	case ATTACHED_DEV_AUDIODOCK_MUIC:
 	case ATTACHED_DEV_JIG_UART_OFF_VB_MUIC:
 		is_cable_attached = true;
@@ -357,9 +359,11 @@ static int muic_charger_cb(enum muic_attached_dev cable_type)
 		break;
 	case ATTACHED_DEV_DESKDOCK_MUIC:
 	case ATTACHED_DEV_AUDIODOCK_MUIC:
+	#if !defined(CONFIG_MACH_GARDA)
 	case ATTACHED_DEV_CARDOCK_MUIC:
 		current_cable_type = POWER_SUPPLY_TYPE_MISC;
 		break;
+	#endif
 	default:
 		pr_err("%s:%s invalid type:%d\n", MUIC_DEV_NAME, __func__,
 				cable_type);
