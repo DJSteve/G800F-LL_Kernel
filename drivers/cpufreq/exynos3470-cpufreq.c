@@ -22,7 +22,7 @@
 #include <mach/cpufreq.h>
 #include <mach/sec_debug.h>
 
-#define	CPUFREQ_LEVEL_END	(L14 + 1)
+#define	CPUFREQ_LEVEL_END	(L15 + 1)
 
 int arm_lock;
 static int max_support_idx;
@@ -60,21 +60,22 @@ static struct cpufreq_frequency_table exynos3470_freq_table_rev[] = {
 };
 
 static struct cpufreq_frequency_table exynos3470_freq_table_rev2[] = {
-        {L0, 1600 * 1000},
-        {L1, 1500 * 1000},
-	{L2, 1400 * 1000},
-	{L3, 1300 * 1000},
-	{L4, 1200 * 1000},
-	{L5, 1100 * 1000},
-	{L6, 1000 * 1000},
-	{L7,  900 * 1000},
-	{L8,  800 * 1000},
-	{L9,  700 * 1000},
-	{L10, 600 * 1000},
-	{L11, 500 * 1000},
-	{L12, 400 * 1000},
-	{L13, 300 * 1000},
-	{L14, 200 * 1000},
+	{L0, 1700 * 1000},
+        {L1, 1600 * 1000},
+        {L2, 1500 * 1000},
+	{L3, 1400 * 1000},
+	{L4, 1300 * 1000},
+	{L5, 1200 * 1000},
+	{L6, 1100 * 1000},
+	{L7, 1000 * 1000},
+	{L8,  900 * 1000},
+	{L9,  800 * 1000},
+	{L10, 700 * 1000},
+	{L11, 600 * 1000},
+	{L12, 500 * 1000},
+	{L13, 400 * 1000},
+	{L14, 300 * 1000},
+	{L15, 200 * 1000},
 	{0, CPUFREQ_TABLE_END},
 };
 
@@ -132,6 +133,8 @@ static unsigned int clkdiv_cpu0_3470_rev2[CPUFREQ_LEVEL_END][6] = {
 	 * { DIVCORE, DIVCOREM,
 	 *		DIVATB, DIVPCLK_DBG, DIVAPLL, DIVCORE2 }
 	 */
+        /* ARM L0: 1700Mhz */
+        { 0, 3, 6, 7, 7, 0 },
 
 	/* ARM L0: 1600Mhz */
         { 0, 3, 6, 7, 7, 0 },
@@ -229,6 +232,9 @@ static unsigned int clkdiv_cpu1_3470_rev2[CPUFREQ_LEVEL_END][2] = {
 	 *Clock divider value for following
 	 * { DIVCOPY, DIVHPM }
 	 */
+        /* ARM L0: 1700MHz */
+        { 6, 0 },
+
 	/* ARM L0: 1600MHz */
 	{ 6, 0 },
 
@@ -318,6 +324,9 @@ static unsigned int exynos3470_apll_pms_table_rev[CPUFREQ_LEVEL_END] = {
 };
 
 static unsigned int exynos3470_apll_pms_table_rev2[CPUFREQ_LEVEL_END] = {
+	/* APLL FOUT L3: 1.7GHz */
+	((425<<16)|(6<<8)|(0x0)),
+
 	/* APLL FOUT L0: 1600MHz */
         ((200<<16)|(3<<8)|(0x0)),
 
@@ -366,16 +375,17 @@ static unsigned int exynos3470_apll_pms_table_rev2[CPUFREQ_LEVEL_END] = {
 };
 
 static int exynos3470_bus_table[CPUFREQ_LEVEL_END] = {
+        400000,         /* 1.7GHz */
         400000,		/* 1.6GHz */
 	400000,         /* 1.5GHz */
 	400000,         /* 1.4GHz */
-	267000,         /* 1.3GHz */
-	267000,         /* 1.2GHz */
-	267000,         /* 1.1GHz */
-	267000,         /* 1.0GHz */
-	200000,         /* 900MHz */
-	200000,         /* 800MHz */
-	200000,         /* 700MHz */
+	400000,         /* 1.3GHz */
+	400000,         /* 1.2GHz */
+	400000,         /* 1.1GHz */
+	400000,         /* 1.0GHz */
+	267000,         /* 900MHz */
+	267000,         /* 800MHz */
+	267000,         /* 700MHz */
 	200000,         /* 600MHz */
 	200000,         /* 500MHz */
 	200000,         /* 400MHz */
