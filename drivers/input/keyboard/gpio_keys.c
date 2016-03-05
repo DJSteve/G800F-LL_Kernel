@@ -9,6 +9,10 @@
  * published by the Free Software Foundation.
  */
 
+//#ifdef CONFIG_TOUCHSCREEN_DT2W
+//#define CYTTSP5_DT2W
+//#endif
+
 #include <linux/module.h>
 
 #include <linux/init.h>
@@ -33,6 +37,10 @@
 #ifdef CONFIG_INPUT_BOOSTER
 #include <linux/input/input_booster.h>
 #endif
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+#include <linux/cyttsp5/cyttsp5_core.h>
+#endif
+
 
 struct gpio_button_data {
 	struct gpio_keys_button *button;
@@ -1162,6 +1170,10 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	input_sync(input);
 
 	device_init_wakeup(&pdev->dev, wakeup);
+
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+	cyttsp5_setpwrdev(input);
+#endif
 
 	return 0;
 

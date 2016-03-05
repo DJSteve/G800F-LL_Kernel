@@ -59,8 +59,8 @@
 
 #define KTD2026_RESET		0x07
 
-#define LED_MAX_CURRENT		0x30
-#define LED_DEFAULT_CURRENT	0x20
+#define LED_MAX_CURRENT		0x60
+#define LED_DEFAULT_CURRENT	0x40
 #define LED_LOW_CURRENT		0x07
 #define LED_OFF			0x00
 

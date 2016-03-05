@@ -28,6 +28,9 @@
 
 #include "cyttsp5_regs.h"
 
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+#include "cyttsp5_mt_common.h"
+#endif
 
 /************************************************************************
  * Macros, Structures
@@ -61,12 +64,6 @@ enum {
 	IDAC_LOCAL,
 };
 #define FACTORY_CMD(name, func) .cmd_name = name, .cmd_func = func
-
-struct factory_cmd {
-	struct list_head list;
-	const char *cmd_name;
-	void (*cmd_func)(void *device_data);
-};
 
 /************************************************************************
  * function def
@@ -1170,6 +1167,9 @@ release_exclusive:
 			__func__);
 check_rc:
 	_check_rc(sfd, rc);
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+        cyttsp5_dt2w_viewcoverNotify(sfd->dev, sfd->view_cover_closed);
+#endif
 }
 
 static void hover_enable(void *device_data)
@@ -1717,7 +1717,13 @@ int cyttsp5_samsung_factory_probe(struct device *dev)
 	if (rc) {
 		tsp_debug_err(true, sfd->dev, "Failed to create sysfs group\n");
 		goto error_sysfs_create_group;
-	}	rc = sysfs_create_link(&sfd->factory_dev->kobj,		&cd->md.input->dev.kobj, "input");	if (rc < 0) {		tsp_debug_err(true, sfd->dev, "Failed to create symbolic link\n");	}
+	}
+
+	rc = sysfs_create_link(&sfd->factory_dev->kobj,
+		&cd->md.input->dev.kobj, "input");
+	if (rc < 0) {
+		tsp_debug_err(true, sfd->dev, "Failed to create symbolic link\n");
+	}
 
 	sfd->sysfs_nodes_created = true;
 

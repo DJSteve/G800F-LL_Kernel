@@ -20,8 +20,14 @@
  * Contact Cypress Semiconductor at www.cypress.com <ttdrivers@cypress.com>
  *
  */
+ 
+#define CYTTSP5_DT2W
 
 #include "cyttsp5_regs.h"
+#ifdef CYTTSP5_DT2W
+#include <linux/dc_motor.h>
+#include <linux/sensor/cm36686.h>
+#endif
 
 #define CYTTSP5_USE_SLEEP 0
 
@@ -30,6 +36,15 @@ MODULE_FIRMWARE(CY_FW_FILE_NAME);
 static const char *cy_driver_core_name = CYTTSP5_CORE_NAME;
 static const char *cy_driver_core_version = CY_DRIVER_VERSION;
 static const char *cy_driver_core_date = CY_DRIVER_DATE;
+
+#ifdef CYTTSP5_DT2W
+static struct input_dev *pwr_dev;
+static struct dc_motor_drvdata *vib_dev;
+static struct cm36686_data *sensor_data; 
+static DEFINE_MUTEX(pwrkeyworklock);
+static DEFINE_MUTEX(sensorsworklock);
+static DEFINE_MUTEX(sensorsworklockr);
+#endif
 
 struct cyttsp5_hid_field {
 	int report_count;
@@ -3923,22 +3938,13 @@ static int cyttsp5_put_device_into_sleep_(struct cyttsp5_core_data *cd)
 static int cyttsp5_core_poweroff_device_(struct cyttsp5_core_data *cd)
 {
 	int rc;
-	if (cd->irq_enabled) {
-		disable_irq(cd->irq);
-		cd->irq_enabled = false;
-	}
+
 	/* No need for cd->pdata->power check since we did it in probe */
+	cd->hw_power_state = false;
 	rc = cd->cpdata->power(cd->cpdata, 0, cd->dev, 0);
-	if (rc < 0) {
+	if (rc < 0)
 		tsp_debug_err(true, cd->dev, "%s: HW Power down fails r=%d\n",
 				__func__, rc);
-		if (!cd->irq_enabled) {
-			enable_irq(cd->irq);
-			cd->irq_enabled = true;
-		}
-		return rc;
-	}
-	cd->hw_power_state = false;
 	return rc;
 }
 
@@ -4252,8 +4258,7 @@ static irqreturn_t cyttsp5_irq(int irq, void *handle)
 		mutex_unlock(&cd->system_lock);
 
 	if (!cd->hw_power_state) {
-		if (printk_ratelimit())
-		dev_err(cd->dev, "%s: !cd->hw_power_state\n", __func__);
+		tsp_debug_info(true, cd->dev, "%s: !cd->hw_power_state\n", __func__);
 		return IRQ_HANDLED;
 	}
 
@@ -4753,10 +4758,6 @@ static int cyttsp5_core_poweron_device_(struct cyttsp5_core_data *cd)
 		goto exit;
 	}
 	cd->hw_power_state = true;
-	if (!cd->irq_enabled) {
-		irq_enable(cd->irq);
-		cd->irq_enabled = true;
-	}
 	cyttsp5_queue_startup(cd);
 exit:
 	return rc;
@@ -5582,6 +5583,147 @@ static ssize_t cyttsp5_easy_wakeup_gesture_store(struct device *dev,
 	return size;
 }
 
+#ifdef CYTTSP5_DT2W
+static ssize_t cyttsp5_dt2w_status_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
+	ssize_t ret;
+
+	ret = snprintf(buf, CY_MAX_PRBUF_SIZE, "%d\n",
+			cd->md.dt2w_status);
+	return ret;
+}
+
+static ssize_t cyttsp5_dt2w_status_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
+	unsigned long value;
+	int ret;
+
+	ret = kstrtoul(buf, 10, &value);
+	if ((ret < 0) || (ret > 1))
+		return ret;
+
+	cd->md.dt2w_status = value;
+
+	if (ret)
+		return ret;
+
+	return size;
+}
+
+void cyttsp5_setpwrdev(struct input_dev *input_device)
+{
+	pwr_dev = input_device;
+	printk(KERN_INFO "%s: DT2W Specific input device received\n", __func__);
+}
+
+void cyttsp5_setvibdev(struct dc_motor_drvdata *vib_device) 
+{
+	vib_dev = vib_device;
+	printk(KERN_INFO "%s: DT2W Specific vibrator device received\n", __func__);
+}
+
+static void _cyttsp5_presspwr(struct work_struct *cyttsp5_dt2w_power_work)
+{
+	if (pwr_dev)
+	{
+		if (!mutex_trylock(&pwrkeyworklock))
+					return;
+		input_event(pwr_dev, EV_KEY, KEY_POWER, 1);
+		input_event(pwr_dev, EV_SYN, 0, 0);
+		msleep(100);
+		input_event(pwr_dev, EV_KEY, KEY_POWER, 0);
+		input_event(pwr_dev, EV_SYN, 0, 0);
+		msleep(100);
+		mutex_unlock(&pwrkeyworklock);
+		printk(KERN_INFO "%s: Turn it on\n", __func__);
+	}
+}
+static DECLARE_WORK(cyttsp5_dt2w_power_work, _cyttsp5_presspwr);
+
+void cyttsp5_presspwr(void)
+{
+	schedule_work(&cyttsp5_dt2w_power_work);
+}
+
+void cyttsp5_vibrate(int value)
+{
+	if (vib_dev)
+	{
+		printk(KERN_INFO "%s: [VIB]Timeout: %d\n", __func__, value);
+		vib_dev->dev.enable(&vib_dev->dev, value);
+	}
+}
+
+void cyttsp5_setsensor(void *sensor)
+{
+	sensor_data = (struct cm36686_data *)sensor;
+	printk(KERN_INFO "%s: DT2W Specific sensor data received\n", __func__);
+}
+
+static void _cyttsp5_enableSensors(struct work_struct *cyttsp5_dt2w_enableSensors_work)
+{
+	if (sensor_data)
+	{
+		if (!mutex_trylock(&sensorsworklock))
+					return;
+		cm36686_enableSensors(sensor_data);
+		mutex_unlock(&sensorsworklock);
+	}
+}
+static DECLARE_WORK(cyttsp5_dt2w_enableSensors_work, _cyttsp5_enableSensors);
+
+static void _cyttsp5_stopSensors(struct work_struct *cyttsp5_dt2w_stopSensors_work)
+{
+	if (sensor_data)
+	{
+		if (!mutex_trylock(&sensorsworklockr))
+					return;
+		cm36686_restorePowerState(sensor_data);
+		mutex_unlock(&sensorsworklockr);
+	}
+}
+static DECLARE_WORK(cyttsp5_dt2w_stopSensors_work, _cyttsp5_stopSensors);
+
+void cyttsp5_enableSensors(void)
+{
+	schedule_work(&cyttsp5_dt2w_enableSensors_work);
+}
+
+void cyttsp5_stopSensors(void)
+{
+	schedule_work(&cyttsp5_dt2w_stopSensors_work);
+}
+
+void cyttsp5_startSensors(void)
+{
+	if (sensor_data)
+	{
+		cm36686_storePowerState(sensor_data);
+	}
+}
+
+void cyttsp5_syncSensors(void * mt_data)
+{
+	struct cyttsp5_mt_data *md = (struct cyttsp5_mt_data *)mt_data;
+	if (sensor_data)
+	{
+		md->dt2w_sensorProx = sensor_data->dt2w_ps_data;
+		md->dt2w_sensorLightAls = sensor_data->als_data;
+		md->dt2w_sensorLightWhite = sensor_data->white_data;
+		md->dt2w_sensor_origProx = sensor_data->orig_prox_state;
+		/* a problem with dt2w was that it would turn on the screen while
+		 * a phone call was active, by detecting the user's face touching the screen
+		 * a solution is just to disable dt2w if the proximity sensor was
+		 * originally on, but some apps can be using it as well
+		 * but there is no other reliable way of detecting a phone call */ 
+	}
+}
+#endif
+
 static struct device_attribute attributes[] = {
 	__ATTR(ic_ver, S_IRUGO, cyttsp5_ic_ver_show, NULL),
 	__ATTR(drv_ver, S_IRUGO, cyttsp5_drv_ver_show, NULL),
@@ -5594,6 +5736,11 @@ static struct device_attribute attributes[] = {
 	__ATTR(easy_wakeup_gesture, S_IRUSR | S_IWUSR,
 		cyttsp5_easy_wakeup_gesture_show,
 		cyttsp5_easy_wakeup_gesture_store),
+#ifdef CYTTSP5_DT2W
+	__ATTR(dt2w_status, S_IRUSR | S_IWUSR,
+		cyttsp5_dt2w_status_show,
+		cyttsp5_dt2w_status_store),
+#endif
 };
 
 static int add_sysfs_interfaces(struct device *dev)
@@ -6015,6 +6162,10 @@ int cyttsp5_probe(const struct cyttsp5_bus_ops *ops, struct device *dev,
 			tsp_debug_err(true, cd->dev, "%s: calibration fail, rc=%d\n",
 			__func__, rc);
 	}
+#ifdef CYTTSP5_DT2W
+	cd->md.dt2w_status = 0;
+#endif
+	
 	return 0;
 
 error_startup_debug:

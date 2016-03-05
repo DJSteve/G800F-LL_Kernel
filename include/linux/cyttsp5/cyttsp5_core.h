@@ -55,6 +55,11 @@ __stringify(CY_DRIVER_NAME)		    \
 #define CY_HW_VERSION 0x02
 #define CY_FW_VERSION 0x1900
 
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+#include <linux/input.h>
+#include <linux/dc_motor.h>
+#endif
+
 enum cyttsp5_core_platform_flags {
 	CY_CORE_FLAG_NONE,
 	CY_CORE_FLAG_WAKE_ON_GESTURE,
@@ -161,4 +166,10 @@ struct cyttsp5_platform_data {
 };
 
 void tsp_charger_inform(bool en);
+
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+void cyttsp5_setpwrdev(struct input_dev *input_device);
+void cyttsp5_setvibdev(struct dc_motor_drvdata *vib_device);
+void cyttsp5_setsensor(void *sensor);
+#endif
 #endif /* _LINUX_CYTTSP5_CORE_H */

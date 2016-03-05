@@ -20,14 +20,27 @@
  * Contact Cypress Semiconductor at www.cypress.com <ttdrivers@cypress.com>
  *
  */
+#define CYTTSP5_DT2W
 
 #include "cyttsp5_regs.h"
+#include "cyttsp5_core.h"
 #include <linux/input/mt.h>
+#ifdef CYTTSP5_DT2W
+#include <linux/wakelock.h>
+#endif
 
 #define CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5_MT_B
 #define CYTTSP5_TOUCHLOG_ENABLE 0
+
+
 /*#define REPORT_XY_WHEN_LIFTOFF*/
 #define FORCE_SATISFY_PALMPAUSE_FOR_LARGEOBJ
+#ifdef CYTTSP5_DT2W
+#define MS_TO_NS(x)	(x * 1E6L)
+
+static void cyttsp5_dt2w_timerStart(struct cyttsp5_mt_data *md);
+static void cyttsp5_dt2w_timerCancel(struct cyttsp5_mt_data *md);
+#endif
 
 
 #if TOUCH_BOOSTER
@@ -153,6 +166,7 @@ static void cyttsp5_final_sync(struct input_dev *input, int max_slots,
 	for (t = 0; t < max_slots; t++) {
 		if (test_bit(t, ids)) {
 			input_mt_slot(input, t);
+//			input_report_abs(input, ABS_MT_SUMSIZE, sumsize);
 			input_report_abs(input, ABS_MT_PALM, palm);
 			continue;
 		}
@@ -663,6 +677,7 @@ static void cyttsp5_get_mt_touches(struct cyttsp5_mt_data *md,
 			value = tch->abs[CY_TCH_X + j];
 			input_report_abs(md->input, sig, value);
 		}
+		
 
 		/* Get the extended touch fields */
 #ifdef SAMSUNG_TOUCH_MODE
@@ -694,6 +709,51 @@ static void cyttsp5_get_mt_touches(struct cyttsp5_mt_data *md,
 
 		cyttsp5_input_sync(md->input);
 		mt_sync_count++;
+		
+#ifdef CYTTSP5_DT2W
+		if ((md->dt2w_status) && !(md->dt2w_keyflag > 0) && (md->dt2w_active))
+		{
+#if TOUCH_BOOSTER
+			touch_num = 0;
+			booster_status = false;
+#endif
+			if ((tch->abs[CY_TCH_O] != CY_OBJ_HOVER) &&
+				(tch->abs[CY_TCH_E] == CY_EV_TOUCHDOWN))
+			{
+				md->dt2w_touchCount++;
+				tsp_debug_dbg(true, dev, "%s:DTW2 Active! Touchdown detected! # %d\n", __func__, md->dt2w_touchCount);
+				cyttsp5_enableSensors();
+				cyttsp5_syncSensors(md);
+				tsp_debug_dbg(true, dev, "%s:DT2W Sensor data PROX: %d\n", __func__, md->dt2w_sensorProx);
+				tsp_debug_dbg(true, dev, "%s:DT2W Sensor data LIGHT: %d %d\n", __func__, md->dt2w_sensorLightAls, md->dt2w_sensorLightWhite);
+				if (!((md->dt2w_sensorProx > 50) && (md->dt2w_sensorLightAls < 16) && (md->dt2w_sensorLightWhite < 45)))
+				{
+					if (md->dt2w_touchCount > 1) {
+						cyttsp5_dt2w_timerCancel(md);
+						if ((abs(md->dt2w_x - tch->abs[CY_TCH_X]) < 50) && (abs(md->dt2w_y - tch->abs[CY_TCH_Y]) < 50) && !(md->dt2w_sensor_origProx))
+						{
+							cyttsp5_vibrate(60);
+							tsp_debug_dbg(true, dev, "%s:DTW2 Active! Initiate Power!\n", __func__);
+							md->dt2w_keyflag = 1;
+							cyttsp5_presspwr();
+						} else {
+							md->dt2w_touchCount = 1;
+							cyttsp5_dt2w_timerStart(md);
+						}
+					} else {
+						cyttsp5_dt2w_timerStart(md);
+					}
+				} else 
+				{
+					tsp_debug_dbg(true, dev, "%s:DTW2 Canceled due to sensor conditions!\n", __func__);
+					cyttsp5_dt2w_timerCancel(md);
+					md->dt2w_touchCount = 0;
+				}
+				md->dt2w_x = tch->abs[CY_TCH_X];
+				md->dt2w_y = tch->abs[CY_TCH_Y];
+			}
+		}
+#endif
 
 cyttsp5_get_mt_touches_pr_tch:
 		print_log(dev, tch, t);
@@ -724,7 +784,6 @@ cyttsp5_get_mt_touches_pr_tch:
 	else
 		set_dvfs_lock(md, 0, false);
 #endif
-
 	md->num_prv_tch = num_cur_tch;
 
 	return;
@@ -897,6 +956,20 @@ void cyttsp5_mt_stylus_enable(struct device *dev, bool enable)
 static int cyttsp5_mt_open(struct input_dev *input)
 {
 	struct device *dev = input->dev.parent;
+#ifdef CYTTSP5_DT2W
+	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
+	struct cyttsp5_mt_data *md = &cd->md;
+	tsp_debug_dbg(true, dev, "%s:Open input device DT2W: %d %d %d\n", __func__, md->dt2w_status,md->dt2w_active,md->dt2w_cover);
+	if ((md->dt2w_status) && (md->dt2w_active) && !(md->dt2w_cover))
+	{
+		tsp_debug_dbg(true, dev, "%s:Touchscreen already active due to DT2W, release wakelock\n", __func__);
+		cyttsp5_stopSensors();
+		cyttsp5_dt2w_timerCancel(md);
+		wake_unlock(&md->dt2w_wake_lock);
+		md->dt2w_active = 0;
+		return 0;
+	}
+#endif
 
 	tsp_debug_dbg(true, dev, "%s:\n", __func__);
 
@@ -919,12 +992,34 @@ static int cyttsp5_mt_open(struct input_dev *input)
 	cyttsp5_core_resume(dev);
 	return 0;
 }
-
+#ifdef CYTTSP5_DT2W
+static void cyttsp5_factory_command(struct device *_dev, const char *command, int value);
+#endif
 static void cyttsp5_mt_close(struct input_dev *input)
 {
 	struct device *dev = input->dev.parent;
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_mt_data *md = &cd->md;
+	
+#ifdef CYTTSP5_DT2W
+	tsp_debug_dbg(true, dev, "%s:Close input device DT2W: %d %d %d\n", __func__, md->dt2w_status,md->dt2w_active,md->dt2w_cover);
+	if ((md->dt2w_status) && !(md->dt2w_cover))
+	{
+		tsp_debug_dbg(true, dev, "%s:Prohibit touchscreen shutdown for DT2W\n", __func__);
+		cyttsp5_factory_command(dev, "clear_cover_mode", 0);
+		cyttsp5_factory_command(dev, "hover_enable", 0);
+		md->dt2w_active = 1;
+		md->dt2w_keyflag = 0;
+		md->dt2w_touchCount = 0;
+		wake_lock(&md->dt2w_wake_lock);
+		cyttsp5_startSensors();
+		cyttsp5_enableSensors();
+		tsp_debug_dbg(true, dev, "%s:Close input device DT2W complete, hold wakelock: %d %d %d\n", __func__, md->dt2w_status,md->dt2w_active,md->dt2w_cover);
+		return;
+	}
+
+
+#endif
 
 	tsp_debug_dbg(true, dev, "%s:\n", __func__);
 
@@ -953,6 +1048,7 @@ static void cyttsp5_mt_close(struct input_dev *input)
 
 	/* pm_runtime_put(dev); */
 	cyttsp5_core_suspend(dev);
+	
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -1072,7 +1168,8 @@ static int cyttsp5_setup_input_device(struct device *dev)
 		min = 0, max = 1, 0, 0);
 	tsp_debug_dbg(true, dev, "%s: register signal=%02X min=%d max=%d\n",
 				__func__, signal, min, max);
-
+//	input_set_abs_params(md->input, signal = ABS_MT_SUMSIZE,
+//		min = 0, max = 255, 0, 0);
 	tsp_debug_dbg(true, dev, "%s: register signal=%02X min=%d max=%d\n",
 				__func__, signal, min, max);
 #endif
@@ -1105,6 +1202,90 @@ static int cyttsp5_setup_input_attention(struct device *dev)
 
 	return rc;
 }
+
+#ifdef CYTTSP5_DT2W
+static void cyttsp5_factory_command(struct device *_dev, const char *command, int value)
+{
+	struct cyttsp5_core_data *cd = dev_get_drvdata(_dev);
+	struct cyttsp5_samsung_factory_data *sfd = &cd->sfd;
+	struct factory_cmd *factory_cmd_ptr = NULL;
+	//char strbuff[FACTORY_CMD_STR_LEN] = "hover_enable";
+	char strbuff[FACTORY_CMD_STR_LEN] = {0};
+	bool cmd_found = false;
+	printk(KERN_INFO "%s: DT2W Factory command to Samsung Factory: %s\n", __func__, command);
+	strcpy(strbuff, command); // used internally, can be assumed command will fit
+	/* find command */
+	list_for_each_entry(factory_cmd_ptr,
+			&sfd->factory_cmd_list_head, list) {
+		if (!strcmp(strbuff, factory_cmd_ptr->cmd_name)) {
+			cmd_found = true;
+			break;
+		}
+	}
+	if (cmd_found)
+	{
+		sfd->factory_cmd_param[0] = value;
+		factory_cmd_ptr->cmd_func(sfd);
+		printk(KERN_INFO "%s: DT2W Factory command to Samsung Factory Result: %s\n", __func__, sfd->factory_cmd_result);
+	}
+}
+
+static enum hrtimer_restart cyttsp5_dt2w_hrtimer_callback( struct hrtimer *timer )
+{
+	struct cyttsp5_mt_data *md = container_of(timer, struct cyttsp5_mt_data, dt2w_timer);
+	printk(KERN_INFO "%s: DT2W Timer finished, touch count reset\n", __func__);
+	md->dt2w_touchCount = 0;
+  	return HRTIMER_NORESTART;
+}
+
+static void cyttsp5_dt2w_timerStart(struct cyttsp5_mt_data *md)
+{
+	if (md->dt2w_timerFlag)
+	{
+		printk(KERN_INFO "%s: DT2W Timer started.\n", __func__);
+		hrtimer_start( &md->dt2w_timer, md->dt2w_ktime, HRTIMER_MODE_REL );	
+	}
+}
+
+static void cyttsp5_dt2w_timerCancel(struct cyttsp5_mt_data *md)
+{
+	if (md->dt2w_timerFlag)
+	{
+		printk(KERN_INFO "%s: DT2W Timer canceled.\n", __func__);
+		hrtimer_cancel(&md->dt2w_timer);	
+	}
+}
+
+static void cyttsp5_dt2w_timerInit(struct cyttsp5_mt_data *md)
+{
+	unsigned long delay_in_ms = 500L;
+	printk(KERN_INFO "%s: Setting up DT2W timer\n", __func__);
+	hrtimer_init( &md->dt2w_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL );
+  	md->dt2w_ktime = ktime_set( 0, MS_TO_NS(delay_in_ms) );
+  	md->dt2w_timer.function = &cyttsp5_dt2w_hrtimer_callback;
+  	md->dt2w_timerFlag = 1;
+}
+
+void cyttsp5_dt2w_viewcoverNotify(struct device *_dev ,int value)
+{
+	struct cyttsp5_core_data *cd = dev_get_drvdata(_dev);
+	struct cyttsp5_mt_data *md = &cd->md;
+
+	printk(KERN_INFO "%s: DT2W: Notified of view cover status: %d \n", __func__, value);
+	md->dt2w_cover = value;
+	if (value && md->dt2w_active)
+	{
+		md->dt2w_active = 0;
+		cyttsp5_stopSensors();
+		cyttsp5_dt2w_timerCancel(md);
+		printk(KERN_INFO "%s: DT2W: Release wakelock", __func__);
+		wake_unlock(&md->dt2w_wake_lock);
+		printk(KERN_INFO "%s: DT2W: View cover closed while panel active, attempt to suspend driver now.\n", __func__);
+		cyttsp5_mt_close(md->input);
+
+	}
+}
+#endif
 
 int cyttsp5_mt_probe(struct device *dev)
 {
@@ -1177,6 +1358,17 @@ int cyttsp5_mt_probe(struct device *dev)
 #endif
 
 	tsp_debug_dbg(false, dev, "%s:done\n", __func__);
+#ifdef CYTTSP5_DT2W
+	md->dt2w_active = 0;
+	md->dt2w_keyflag = 0;
+	md->dt2w_touchCount = 0;
+	md->dt2w_timerFlag = 0;
+	md->dt2w_x = 0;
+	md->dt2w_y = 0;
+	md->dt2w_cover = 0;
+	cyttsp5_dt2w_timerInit(md);
+	wake_lock_init(&md->dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w_wake_hold");
+#endif
 	return 0;
 
 error_init_input:
@@ -1211,6 +1403,11 @@ int cyttsp5_mt_release(struct device *dev)
 		_cyttsp5_unsubscribe_attention(dev, CY_ATTEN_STARTUP,
 			CY_MODULE_MT, cyttsp5_setup_input_attention, 0);
 	}
+
+#ifdef CYTTSP5_DT2W
+	cyttsp5_dt2w_timerCancel(md);
+	wake_lock_destroy(&md->dt2w_wake_lock);
+#endif
 
 	return 0;
 }

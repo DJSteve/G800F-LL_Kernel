@@ -24,6 +24,7 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 
+#include <linux/sysfs_helpers.h>
 #include <mach/cpufreq.h>
 #include <mach/asv-exynos.h>
 #include <mach/tmu.h>
@@ -34,7 +35,7 @@
 #define VOLT_RANGE_STEP		25000
 
 #define MIN_VOLT 600000
-#define MAX_VOLT_ 1500000
+#define MAX_VOLT_ 1600000
 #define VOLT_DIV		500
 
 #ifdef CONFIG_SMP
@@ -51,6 +52,7 @@ static unsigned int freq_max;
 static unsigned int freq_min;
 
 static struct exynos_dvfs_info *exynos_info;
+unsigned int	*default_volt_table;
 
 static struct regulator *arm_regulator;
 static unsigned int volt_offset;
@@ -563,6 +565,7 @@ static ssize_t show_freq_table(struct kobject *kobj,
 					freq_table[i].frequency);
 	}
 
+
 	count += snprintf(&buf[count], 2, "\n");
 	return count;
 }
@@ -588,9 +591,14 @@ static ssize_t show_volt_table(struct kobject *kobj,
 					freq_table[i].frequency, exynos_info->volt_table[i]);
 	}
 
+	count += snprintf(&buf[count], pr_len, "%d %d ",
+					-42, 0); /* magic */
+
 	count += snprintf(&buf[count], 2, "\n");
 	return count;
 }
+
+extern void exynos3470_restoreDefaultVolts(void);
 
 static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 			      const char *buf, size_t count)
@@ -610,11 +618,17 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 
     microvolts = (microvolts / VOLT_DIV) * VOLT_DIV; /* integer operations should render a nice workable value */
 
-    if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
-    {
-		printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation failed, abort : %d %d", target_freq, microvolts);
-		return -EINVAL;
-	}
+    //if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
+    //{
+//		printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation failed, abort : %d %d", target_freq, microvolts);
+//		return -EINVAL;
+//	}
+
+    if (target_freq == -42) // its magic!
+		goto appendAllVolts;
+
+	if (target_freq == -43) // more magic!
+		goto restoreDefaultVolts;
 
 	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
 		unsigned int freq = table[i].frequency;
@@ -630,11 +644,33 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 	if (table[i].frequency == CPUFREQ_TABLE_END)
 		return -EINVAL;
 
+	sanitize_min_max(microvolts, MIN_VOLT, MAX_VOLT_);
+
 	/* "index" is the index of the voltage table entry we want */
 	printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation success, setting values : %d %d", target_freq, microvolts);
 
-	exynos_info->volt_table[index] = microvolts;	
+	exynos_info->volt_table[index] = microvolts;
 
+
+	return count;
+
+appendAllVolts:;
+
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+		unsigned int freq = table[i].frequency;
+		unsigned int volt = 0; 
+		if (freq == CPUFREQ_ENTRY_INVALID)
+			continue;
+		volt = exynos_info->volt_table[i] + microvolts;
+		sanitize_min_max(volt, MIN_VOLT, MAX_VOLT_)
+		exynos_info->volt_table[i] = volt;
+	}
+	printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation success, setting ALL values : %d %d", target_freq, microvolts);
+	return count;
+
+restoreDefaultVolts:;
+	printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation success, setting DEFAULT values : %d %d", target_freq, microvolts);
+	exynos3470_restoreDefaultVolts();
 	return count;
 }
 

@@ -787,6 +787,23 @@ struct cyttsp5_mt_data {
 	struct pm_qos_request tsp_int_qos;
 	unsigned char boost_level;
 #endif
+#ifdef CONFIG_TOUCHSCREEN_DT2W
+	bool dt2w_active;
+	bool dt2w_keyflag;
+	unsigned int dt2w_touchCount;
+	bool dt2w_timerFlag;
+	unsigned int dt2w_x;
+	unsigned int dt2w_y;
+	bool dt2w_cover;
+	struct hrtimer dt2w_timer;
+	ktime_t dt2w_ktime;
+	struct wake_lock dt2w_wake_lock;
+	bool dt2w_status;
+	u16 dt2w_sensorProx;
+	u16 dt2w_sensorLightAls;
+	u16 dt2w_sensorLightWhite;
+	bool dt2w_sensor_origProx;
+#endif
 };
 
 struct cyttsp5_btn_data {
@@ -840,6 +857,12 @@ struct cyttsp5_sfd_idac {
 	u8 gidac_max;
 	u8 lidac_min;
 	u8 lidac_max;
+};
+
+struct factory_cmd {
+	struct list_head list;
+	const char *cmd_name;
+	void (*cmd_func)(void *device_data);
 };
 
 struct cyttsp5_samsung_factory_data {
