@@ -617,7 +617,7 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 
     printk(KERN_INFO "[Voltage Control] CPU Voltage table change request : %d %d", target_freq, microvolts);
 
-    microvolts = (microvolts) * 1000; /* integer operations should render a nice workable value */
+    microvolts = microvolts; /* integer operations should render a nice workable value */
 
     //if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
     //{
@@ -636,7 +636,7 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 		if (freq == CPUFREQ_ENTRY_INVALID)
 			continue;
 
-		if (target_freq*1000 == freq) {
+		if (target_freq == freq) {
 			index = i;
 			break;
 		}
