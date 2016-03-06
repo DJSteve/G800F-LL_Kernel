@@ -177,7 +177,7 @@ static int exynos_frequency_table_target(struct cpufreq_policy *policy,
 static int exynos_cpufreq_scale(unsigned int target_freq,
 				unsigned int curr_freq, struct cpufreq_policy *policy)
 {
-	unsigned int *volt_table = exynos_info->volt_table;
+	unsigned int * volt_table = exynos_info->volt_table;
 	struct cpufreq_frequency_table *freq_table = exynos_info->freq_table;
 	unsigned int new_index, old_index;
 	unsigned int arm_volt, safe_arm_volt = 0;
@@ -507,11 +507,12 @@ static struct notifier_block exynos_tmu_nb = {
 static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 {
 	policy->cur = policy->min = policy->max = exynos_getspeed(policy->cpu);
+	policy->max = 1400000;
 
 	cpufreq_frequency_table_get_attr(exynos_info->freq_table, policy->cpu);
 
 	/* set the transition latency value */
-	policy->cpuinfo.transition_latency = 100000;
+	policy->cpuinfo.transition_latency = 1000;
 
 	/*
 	 * EXYNOS4 multi-core processors has 2 cores
@@ -587,12 +588,12 @@ static ssize_t show_volt_table(struct kobject *kobj,
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
 		if (freq_table[i].frequency != CPUFREQ_ENTRY_INVALID)
-			count += snprintf(&buf[count], pr_len, "%d %d ",
+			count += snprintf(&buf[count], pr_len, "%8u: %8d\n",
 					freq_table[i].frequency, exynos_info->volt_table[i]);
 	}
 
-	count += snprintf(&buf[count], pr_len, "%d %d ",
-					-42, 0); /* magic */
+//	count += snprintf(&buf[count], pr_len, "%d: %d ",
+//					-42, 0); /* magic */
 
 	count += snprintf(&buf[count], 2, "\n");
 	return count;
@@ -616,7 +617,7 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 
     printk(KERN_INFO "[Voltage Control] CPU Voltage table change request : %d %d", target_freq, microvolts);
 
-    microvolts = (microvolts / VOLT_DIV) * VOLT_DIV; /* integer operations should render a nice workable value */
+    microvolts = (microvolts) * 1000; /* integer operations should render a nice workable value */
 
     //if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
     //{
@@ -635,7 +636,7 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 		if (freq == CPUFREQ_ENTRY_INVALID)
 			continue;
 
-		if (target_freq == freq) {
+		if (target_freq*1000 == freq) {
 			index = i;
 			break;
 		}
