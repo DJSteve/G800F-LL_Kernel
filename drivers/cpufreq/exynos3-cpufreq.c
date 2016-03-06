@@ -619,11 +619,11 @@ static ssize_t store_volt_table(struct kobject *kobj, struct attribute *attr,
 
     microvolts = microvolts; /* integer operations should render a nice workable value */
 
-    //if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
-    //{
-//		printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation failed, abort : %d %d", target_freq, microvolts);
-//		return -EINVAL;
-//	}
+    if ((microvolts < MIN_VOLT) || (microvolts > MAX_VOLT_))
+    {
+		printk(KERN_INFO "[Voltage Control] CPU Voltage table change request evaluation failed, abort : %d %d", target_freq, microvolts);
+		return -EINVAL;
+	}
 
     if (target_freq == -42) // its magic!
 		goto appendAllVolts;
